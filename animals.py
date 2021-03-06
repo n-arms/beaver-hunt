@@ -75,22 +75,24 @@ class Beaver:
     def __str__(self):
         return f"Beaver: [hunger: {self._hunger:.3f}, thirst: {self._thirst:.3f}, position: {self._pos}, state: {self._state:.3f}]"
     def tick(self, gameworld):
+        print("ticking: "+str(self))
         self._hunger += 0.01
         self._thirst += 0.01
         if (self._hunger > 1 or self._thirst > 1):
+            print("death")
             gameworld.kill(self)
         if (self._state == 0):
             self._chose_state(gameworld.food_water(self._pos))
         elif (self._state == 1):
             self._remaining_ticks -= 1
             if (self._remaining_ticks == 0):
-                self._eat()
+                self._eat(gameworld)
         elif (self._state == 2):
             self._remaining_ticks -= 1
             if (self._remaining_ticks == 1):
-                self._drink()
+                self._drink(gameworld)
         elif self._state in (3, 4):
-            self._advance()
+            self._advance(self._state)
         else:
             raise ValueError("illegal state")
 
@@ -118,14 +120,22 @@ class Beaver:
                 self._target = Position.null()
                 self._state = 0
 
-    def _eat(self):
+    def _eat(self, world):
+        print("eat")
         self._hunger = max(0, self._hunger - 0.25)
-    def _drink(self):
+        world.consume("food", world.food_water(self._pos)["food"])
+        self._state = 0
+
+    def _drink(self, world):
+        print("drink")
         self._thirst = max(0, self._thirst - 0.25)
-    def _advance(self):
+        world.consume("water", world.food_water(self._pos)["water"])
+        self._state = 0
+
+    def _advance(self, target):
         result = self._move()
         if result == 0:
-            self._state = 2
+            self._state = target - 2
             self._remaining_ticks = 5
         elif result == 1:
             self._state = 0
@@ -148,9 +158,9 @@ class World:
     def _tick(self):
         sleep(self._tick_time)
         print("========= GAMETICK =========")
+        print(f"beavers: {len(self._beavers)}, water: {len(self._water)}, food: {len(self._food)}")
         for beaver in self._beavers:
             beaver.tick(self)
-            print(beaver)
         if len(self._beavers) == 0:
             exit()
         print("\n\n\n\n")
@@ -166,7 +176,12 @@ class World:
                 if self._beavers[i] is animal:
                     self._beavers.pop(i)
                     return
+    def consume(self, resource, position):
+        if (resource == "water"):
+            self._water.remove(position)
+        else:
+            self._food.remove(position)
 
 
-w = World(5, 20, 20)
+w = World(1, 20, 20)
 w.mainloop()
