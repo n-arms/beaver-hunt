@@ -1,4 +1,6 @@
 from random import random
+from math import sqrt
+from collections import OrderedDict
 
 class Position:
     """reprsent a Position in 2d space
@@ -25,33 +27,79 @@ class Position:
         if (self._is_null):
             return Position.null()
         return Position(self._x*other, self._y*other)
+    def distance(self, x, y=None):
+        if (y == None):
+            return x.distance(self._x, self._y)
+        else:
+            return sqrt((self._x - x)**2 + (self._y - y)**2)
 
 class Beaver:
-    default_pref = {"eat": 0.5, "drink": 0.5}
-    default_char = {"lazy": 0.5, "vision": 5}
-    default_stats = {"hunger": 0.5, "thirst": 0.5}
     """represent a Beaver, with a method to call every gametick"""
     def __init__(self, start):
         self._pos = start
-        self._state = 0 # let 0 be null, 1 be lerping, 2 be eating, 3 be drinking
         self._remaining_ticks = 0
+        self._state = 0 # 0 is null, 1 is eating, 2 is drinking, 3 is moving to eat, 4 is moving to drink
+        self._vision = 0.5
+        self._hunger = 0.5
+        self._thirst = 0.5
         self._target = Position.null()
-        self._pref = {i: Beaver.default_pref[i] for i in Beaver.default_pref}
-        self._char = {i: Beaver.default_char[i] for i in Beaver.default_char}
-        self._stats = {i: Beaver.default_stats[i] for i in Beaver.default_stats}
     def __str__(self):
         return str(self.pos)
     def tick(self, gameworld):
+        self._hunger += 0.01
+        self._thirst += 0.01
+        if (self._hunger > 1 or self._thirst > 1):
+            gameworld.kill(self)
         if (self._state == 0):
-            if (random() > self._char["lazy"]):
-                nearest_food = gameworld.nearest(self._pos, "food")
-                nearest_water = gameworld.nearest(self._pos, "water")
+            self.chose_state()
         elif (self._state == 1):
-
+            self._remaining_ticks -= 1
+            if (self._remaining_ticks == 0):
+                self.eat()
         elif (self._state == 2):
+            self._remaining_ticks -= 1
+            if (self._remaining_ticks == 1):
+                self.drink()
+        elif (self._state == 3):
+            result = self.move()
+            if result == 0:
+                self._state = 1
+                self._remaining_ticks = 5
+            elif result == 1:
+                self._state = 0
+        elif (self._state == 4):
+            result = self.move()
+            if result == 0:
+                self._state = 2
+                self._remaining_ticks == 5
+            elif result == 1:
+                self._state = 0
 
-    def lerp(self):
-        pass
+        else:
+            raise ValueError("illegal state")
+
+
+    def chose_state(self, features):
+        if "food" in features:
+            if "water" in features:
+                if self._hunger > self._thirst:
+                    self._target = features["food"]
+                    self._state = 3
+                else:
+                    self._target  = features["water"]
+                    self._state = 4
+            else:
+                self._target = features["food"]
+                self._state = 3
+        else:
+            if "water" in features:
+                self._target = features["water"]
+                self._state = 4
+            else:
+                self._target = Position.null()
+                self._state = 0
+
+
 
 b = Beaver(Position(3, 4))
 b.tick()
