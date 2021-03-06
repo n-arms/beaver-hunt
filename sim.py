@@ -12,6 +12,7 @@ class WorldCanvas(Canvas):
         self._beavers = []
         self._food = []
         self._water = []
+
     def _reset_beavers(self):
         for i in self._beavers:
             self.delete(i)
@@ -27,20 +28,26 @@ class WorldCanvas(Canvas):
     def redraw_beavers(self, beavers):
         self._reset_beavers()
         for beaver in beavers:
-            self._beavers.append(self.create_rectangle(*[i*5 for i in beaver.get_coords()]))
+            self._beavers.append(self.draw_beaver(*[i*5 for i in beaver.get_coords()]))
     def redraw_background(self, food, water):
         self._reset_background()
         for tree in food:
-            self._food.append(self.create_oval(*[i*5 for i in tree.image_coords()]))
+            self._food.append(self.draw_food(*[i*5 for i in tree.image_coords()]))
         for pool in water:
-            self._water.append(self.create_oval(*[i*5 for i in pool.image_coords()]))
+            self._water.append(self.draw_water(*[i*5 for i in pool.image_coords()]))
+    def draw_beaver(self, x1, y1, x2, y2):
+        return self.create_oval(x1, y1, x2, y2, fill="#c97e2c", outline="#c97e2c")
+    def draw_food(self, x1, y1, x2, y2):
+        return self.create_rectangle(x1, y1-10, x2, y2+10, fill="#754a1a", outline="#754a1a")
+    def draw_water(self, x1, y1, x2, y2):
+        return self.create_oval(x1, y1, x2, y2, fill="blue", outline="blue")
 
 class World:
     def __init__(self, num_beavers, num_food, num_water, master):
         self._beavers = [Beaver(Position.rand(0, 100)) for i in range(num_beavers)]
         self._food = [Position.rand(0, 100) for i in range(num_food)]
         self._water = [Position.rand(0, 100) for i in range(num_water)]
-        self._tick_time = 0.5
+        self._tick_time = 0.1
 
         self.frame = Frame(root)
         self.frame.grid()
@@ -61,7 +68,6 @@ class World:
 
     def _tick(self):
         sleep(self._tick_time)
-        print("========= GAMETICK =========")
         for beaver in self._beavers:
             beaver.tick(self)
         if len(self._beavers) == 0:

@@ -72,12 +72,12 @@ class Beaver:
         self._hunger = 0.5
         self._thirst = 0.5
         self._target = Position.null()
-        self._speed = 3
+        self._speed = 0.5
     def __str__(self):
         return f"Beaver: [hunger: {self._hunger:.3f}, thirst: {self._thirst:.3f}, position: {self._pos}, state: {self._state:.3f}]"
     def tick(self, gameworld):
-        self._hunger += 0.01
-        self._thirst += 0.01
+        self._hunger += 0.002
+        self._thirst += 0.002
         if (self._hunger > 1 or self._thirst > 1):
             print("death")
             gameworld.kill(self)
