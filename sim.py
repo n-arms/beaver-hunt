@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from animals import Beaver, Position
+from animals import Beaver, Position, Lynx
 from threading import Thread
 from time import sleep
 from sys import exit
@@ -41,12 +41,15 @@ class WorldCanvas(Canvas):
         return self.create_rectangle(x1, y1-10, x2, y2+10, fill="#754a1a", outline="#754a1a")
     def draw_water(self, x1, y1, x2, y2):
         return self.create_oval(x1, y1, x2, y2, fill="blue", outline="blue")
+    def draw_lynx(self, x1, y1, x2, y2):
+        return self.create_oval(x1, y1, x2, y2, fill="tan", outline="tan")
 
 class World:
-    def __init__(self, num_beavers, num_food, num_water, master):
+    def __init__(self, num_beavers, num_food, num_water, num_lynx, master):
         self._beavers = [Beaver(Position.rand(0, 100)) for i in range(num_beavers)]
         self._food = [Position.rand(0, 100) for i in range(num_food)]
         self._water = [Position.rand(0, 100) for i in range(num_water)]
+        self._lynx = [Lynx(Position.rand(0, 100)) for i in range(num_lynx)]
         self._tick_time = 0.1
 
         self.frame = Frame(root)
@@ -70,18 +73,25 @@ class World:
         sleep(self._tick_time)
         for beaver in self._beavers:
             beaver.tick(self)
-        if len(self._beavers) == 0:
+        for lynx in self._lynx:
+            lynx.tick(self)
+        if len(self._beavers) == 0 and len(self._lynx) == 0:
             exit()
     def render_background(self):
         self.canvas.redraw_background(self._food, self._water)
     def render_beavers(self):
         self.canvas.redraw_beavers(self._beavers)
-    def food_water(self, position):
-        return {"food": position.nearest(self._food), "water": position.nearest(self._water)}
+    def features(self, position):
+        return {"food": position.nearest(self._food), "water": position.nearest(self._water), "beaver": position.nearest([i.get_pos() for i in self._beavers])}
     def kill(self, animal):
         if isinstance(animal, Beaver):
             for i in range(len(self._beavers)):
                 if self._beavers[i] is animal:
+                    self._beavers.pop(i)
+                    return
+        elif isinstance(animal, Lynx):
+            for i in range(len(self._lynx)):
+                if self._lynx[i] is animal:
                     self._beavers.pop(i)
                     return
     def consume(self, resource, position):
@@ -91,5 +101,5 @@ class World:
             self._food.remove(position)
 
 root = Tk()
-w = World(5, 20, 20, root)
+w = World(5, 20, 20, 5, root)
 root.mainloop()

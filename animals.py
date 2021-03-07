@@ -94,7 +94,7 @@ class Beaver:
             print("death")
             gameworld.kill(self)
         if (self._state == 0):
-            self._chose_state(gameworld.food_water(self._pos))
+            self._chose_state(gameworld.features(self._pos))
         elif (self._state == 1):
             self._remaining_ticks -= 1
             if (self._remaining_ticks == 0):
@@ -135,13 +135,13 @@ class Beaver:
     def _eat(self, world):
         print("eat")
         self._hunger = max(0, self._hunger - 0.25)
-        world.consume("food", world.food_water(self._pos)["food"])
+        world.consume("food", world.features(self._pos)["food"])
         self._state = 0
 
     def _drink(self, world):
         print("drink")
         self._thirst = max(0, self._thirst - 0.25)
-        world.consume("water", world.food_water(self._pos)["water"])
+        world.consume("water", world.features(self._pos)["water"])
         self._state = 0
 
     def _advance(self, target):
@@ -153,6 +153,8 @@ class Beaver:
             self._state = 0
     def get_coords(self):
         return self._pos.image_coords()
+    def get_pos(self):
+        return self._pos
 
 class Lynx:
     def __init__(self, pos):
@@ -161,9 +163,10 @@ class Lynx:
         self._thirst = 0.5
         self._state = 0 # 0 is null, 1 is eating, 2 is drinking, 3 is moving to eat, 4 is moving to drink
         self._target = Position.null()
+        self._speed = 2
     def tick(self, gameworld):
         if self._state == 0:
-            self._chose_state()
+            self._chose_state(gameworld.features(self._pos))
         elif self._state == 1:
             self._remaining_ticks -= 1
             if (self._remaining_ticks == 0):
@@ -178,7 +181,7 @@ class Lynx:
     def _advance(self, target):
         result = self._move()
         if result == 0:
-            self._state = target - 2
+            self._state -= 2
             self._remaining_ticks = 5
         elif result == 1:
             self._state = 0
@@ -190,13 +193,13 @@ class Lynx:
     def _eat(self, world):
         print("eat")
         self._hunger = max(0, self._hunger - 0.25)
-        world.consume("food", world.food_water(self._pos)["food"])
+        world.consume("food", world.features(self._pos)["food"])
         self._state = 0
 
     def _drink(self, world):
         print("drink")
         self._thirst = max(0, self._thirst - 0.25)
-        world.consume("water", world.food_water(self._pos)["water"])
+        world.consume("water", world.features(self._pos)["water"])
         self._state = 0
 
     def _chose_state(self, features):
