@@ -90,7 +90,6 @@ class World:
         else:
             self._food.remove(position)
 
-
 root = Tk()
 w = World(5, 20, 20, root)
 root.mainloop()

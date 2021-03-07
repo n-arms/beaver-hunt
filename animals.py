@@ -36,6 +36,10 @@ class Position:
         if self._is_null:
             return Position.null()
         return other.sub_exact(self._x, self._y)
+    def __floordiv__(self, other):
+        if self._is_null:
+            return None
+        return Position(self._x//other, self._y//other)
     def sub_exact(self, x, y):
         if self._is_null:
             return Position.null()
@@ -61,6 +65,14 @@ class Position:
         return output
     def image_coords(self):
         return (self._x, self._y, self._x+1, self._y+1)
+    def __hash__(self):
+        return hash(self._x) * 997 + hash(self._y) * 991
+    def __eq__(self, other):
+        return other.equals(self._x, self._y, self._is_null)
+    def equals(self, x, y, is_null):
+        if self._is_null:
+            return is_null
+        return self._x == x and self._y == y
 
 class Beaver:
     """represent a Beaver, with a method to call every gametick"""
@@ -141,3 +153,68 @@ class Beaver:
             self._state = 0
     def get_coords(self):
         return self._pos.image_coords()
+
+class Lynx:
+    def __init__(self, pos):
+        self._pos = pos
+        self._hunger = 0.5
+        self._thirst = 0.5
+        self._state = 0 # 0 is null, 1 is eating, 2 is drinking, 3 is moving to eat, 4 is moving to drink
+        self._target = Position.null()
+    def tick(self, gameworld):
+        if self._state == 0:
+            self._chose_state()
+        elif self._state == 1:
+            self._remaining_ticks -= 1
+            if (self._remaining_ticks == 0):
+                self._eat(gameworld)
+        elif self._state == 2:
+            self._remaining_ticks -= 1
+            if (self._remaining_ticks == 0):
+                self._drink(gameworld)
+        elif self._state in (3, 4):
+            self._advance(self._target)
+
+    def _advance(self, target):
+        result = self._move()
+        if result == 0:
+            self._state = target - 2
+            self._remaining_ticks = 5
+        elif result == 1:
+            self._state = 0
+
+    def _move(self):
+        self._pos += (self._target - self._pos).normalize() * self._speed
+        return self._pos.distance(self._target) > 2
+
+    def _eat(self, world):
+        print("eat")
+        self._hunger = max(0, self._hunger - 0.25)
+        world.consume("food", world.food_water(self._pos)["food"])
+        self._state = 0
+
+    def _drink(self, world):
+        print("drink")
+        self._thirst = max(0, self._thirst - 0.25)
+        world.consume("water", world.food_water(self._pos)["water"])
+        self._state = 0
+
+    def _chose_state(self, features):
+        if "beaver" in features:
+            if "water" in features:
+                if self._hunger > self._thirst:
+                    self._target = features["beaver"]
+                    self._state = 3
+                else:
+                    self._target  = features["water"]
+                    self._state = 4
+            else:
+                self._target = features["beaver"]
+                self._state = 3
+        else:
+            if "water" in features:
+                self._target = features["water"]
+                self._state = 4
+            else:
+                self._target = Position.null()
+                self._state = 0
